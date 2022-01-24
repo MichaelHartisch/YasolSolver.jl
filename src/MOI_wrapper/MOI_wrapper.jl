@@ -333,8 +333,8 @@ function MOI.copy_to(
     for v in MOI.get(model, MOI.ListOfVariableIndices())
 
         try
-            quantifier = MOI.get(model, yasol.VariableAttribute("quantifier"), v)
-            block = MOI.get(model, yasol.VariableAttribute("block"), v)
+            quantifier = MOI.get(model, YasolSolver.VariableAttribute("quantifier"), v)
+            block = MOI.get(model, YasolSolver.VariableAttribute("block"), v)
 
             if quantifier !== nothing && block !== nothing
                 dest.v[v] = _VariableInfo(v, block, quantifier)
@@ -366,7 +366,7 @@ function MOI.copy_to(
 
             # get constraint quantifier
             q = ""
-            q_temp = MOI.get(model, yasol.ConstraintAttribute("quantifier"), ci)
+            q_temp = MOI.get(model, YasolSolver.ConstraintAttribute("quantifier"), ci)
             if q_temp !== nothing
                 q = q_temp
             else
@@ -591,7 +591,7 @@ function MOI.optimize!(model::Optimizer)
             output_file,
         )
         # read solution & set results
-        model.results = yasol.importSolution(qlp_file * ".sol")
+        model.results = YasolSolver.importSolution(qlp_file * ".sol")
 
         if model.results.solutionStatus == "OPTIMAL"
             model.termination_status = MOI.OPTIMAL
