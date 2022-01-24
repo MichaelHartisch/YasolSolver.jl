@@ -3,8 +3,20 @@ uuid = "4543d8c2-dbf1-4999-b2cf-e00b224f19c5"
 authors = ["Hendrik Becker"]
 version = "0.1.0"
 
+[deps]
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+
 [compat]
-julia = "1"
+MathOptInterface = "0.10.7"
+julia = "1.6"
+JuMP = "0.22.2"
+Revise = "3.3.1"
+EzXML = "1.1.0"
+DataStructures = "0.18.11"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

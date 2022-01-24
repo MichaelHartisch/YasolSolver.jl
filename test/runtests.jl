@@ -1,7 +1,9 @@
 using YasolSolver
 using Test
+using JuMP
+using MathOptInterface
+const MOI = MathOptInterface
 
 @testset "YasolSolver.jl" begin
-    # Write your tests here.
-    @test test(2) == 4
+    include("MOI_wrapper.jl")
 end
