@@ -1,0 +1,13 @@
+name = "YasolSolver"
+uuid = "4543d8c2-dbf1-4999-b2cf-e00b224f19c5"
+authors = ["Hendrik Becker"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
