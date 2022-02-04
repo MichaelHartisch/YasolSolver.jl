@@ -119,6 +119,7 @@ end
 
 function call_solver(
     solver::_DefaultSolverCommand,
+    solverPath::String,
     qip_filename::String,
     options::Vector{Int64},
     stdin::IO,
@@ -128,9 +129,9 @@ function call_solver(
     # parse optimizer attributes, value for time_limit is -1 if not supposed to be set
     cmd =  ``
     if options[2] == -1
-        cmd = `Yasol_CLP $(qip_filename) $(options[1])`
+        cmd = `$(solverPath) $(qip_filename) $(options[1])`
     else
-        cmd = `Yasol_CLP $(qip_filename) $(options[1]) $(options[2])`
+        cmd = `$(solverPath) $(qip_filename) $(options[1]) $(options[2])`
     end
 
     solver.f() do solver_path
@@ -190,6 +191,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     output_info::Int64
     # problem file name
     problem_file::String
+    # name of solver .exe
+    solver_path::String
 end
 
 """
@@ -235,6 +238,7 @@ function Optimizer(
         -1,
         -1,
         "",
+        ""
     )
 end
 
@@ -584,6 +588,7 @@ function MOI.optimize!(model::Optimizer)
     try
         call_solver(
             model.solver_command,
+            model.solver_path,
             qlp_file,
             options,
             model.stdin,
@@ -622,6 +627,8 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.time_limit = Int64(value)
     elseif param == MOI.RawOptimizerAttribute("problem file name")
         model.problem_file = String(value)
+    elseif param == MOI.RawOptimizerAttribute("solver path")
+        model.solver_path = String(value)
 
         # check if problem file already exists
         if isfile(String(value))
@@ -643,6 +650,8 @@ function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
         return model.time_limit
     elseif param == MOI.RawOptimizerAttribute("problem file name")
         return model.problem_file
+    elseif param == MOI.RawOptimizerAttribute("solver path")
+        return model.solver_path
     end
 end
 
