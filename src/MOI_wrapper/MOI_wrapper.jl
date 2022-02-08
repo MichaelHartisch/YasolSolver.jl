@@ -314,6 +314,7 @@ function MOI.copy_to(
     model::MOI.ModelLike;
     copy_names::Bool = false,
 )
+
     mapping = MOI.Utilities.IndexMap()
 
     # copy optimizer attributes
@@ -572,6 +573,23 @@ end
 #   Call yasol solver with problem file and parameters.
 # ========================================
 function MOI.optimize!(model::Optimizer)
+
+    # check if problem file name is set, show warning otherwise
+    if(model.problem_file == "")
+        @warn "Please provide a problem file name!"
+    end
+
+    # check if Yasol.ini file is given in the solver folder
+    path = joinpath(pwd(), "Yasol.ini")
+    if !isfile(String(path))
+        @warn "No Yasol.ini file was found in the solver folder!"
+    end
+
+    # check if Yasol .exe is available under given path
+    if !isfile(String(model.solver_path*".exe"))
+        @warn "No Yasol executable was found under the given path!"
+    end
+
     model.optimize_not_called = false
 
     options = [model.output_info, model.time_limit]
