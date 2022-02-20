@@ -43,6 +43,11 @@ function JuMP.add_variable(
     MOI.set(model, YasolSolver.VariableAttribute("quantifier"), var, yasolVar.quantifier)
     MOI.set(model, YasolSolver.VariableAttribute("block"), var, yasolVar.block)
 
+    # print warning, if variable in first block is not existential
+    if(yasolVar.block == 1 && yasolVar.quantifier != "exists")
+        @warn string("Variables in the first block need to be existential!")
+    end
+
     return var
 end
 

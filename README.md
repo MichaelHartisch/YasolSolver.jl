@@ -32,14 +32,16 @@ using JuMP, Yasol
 
 cd("C:/Yasol") # change path to Yasol .exe directory
 
-model = Model(() -> YasolSolver.Optimizer("C:/Yasol/Yasol_CLP")) # use the path to Yasol solver .exe
+model = Model(() -> YasolSolver.Optimizer()) # use the path to Yasol solver .exe
 
+set_optimizer_attribute(model, "solver path", "C:/Yasol/Yasol_CLP")
 set_optimizer_attribute(model, "time limit", 60)
 set_optimizer_attribute(model, "output info", 1)
 set_optimizer_attribute(model, "problem file name", "Example.qlp")
 ```
 
 The solver supports 3 attributes that can be used with JuMP:
+* solver path -> defines the path to the Yasol executable
 * time limit -> defines the time limit in seconds
 * output info -> defines output level (1 is recommended)
 * problem file name -> defines filename of model; solution file will have the same name

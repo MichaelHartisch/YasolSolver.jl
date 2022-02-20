@@ -335,6 +335,10 @@ function MOI.copy_to(
     dest.sense = MOI.get(model, MOI.ObjectiveSense())
 
     # copy variables
+
+    # save the quantifier and block of the last variable
+    last_block = 0
+    last_quantifiers = []
     for v in MOI.get(model, MOI.ListOfVariableIndices())
 
         try
@@ -343,16 +347,42 @@ function MOI.copy_to(
 
             if quantifier !== nothing && block !== nothing
                 dest.v[v] = _VariableInfo(v, block, quantifier)
+
+                if block > last_block
+                    last_block = block
+                end
+
             else
                 @warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
             end
 
         catch err
             #println("You need to set a quantifier and a block for each variable when using Yasol solver!")
-            @warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+            #@warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+            @warn string(err)
         end
 
         mapping[v] = v
+    end
+
+    # show warning, if variable in last block is not existential
+    for v in MOI.get(model, MOI.ListOfVariableIndices())
+        try
+            quantifier = MOI.get(model, YasolSolver.VariableAttribute("quantifier"), v)
+            block = MOI.get(model, YasolSolver.VariableAttribute("block"), v)
+
+            if block == last_block
+                push!(last_quantifiers, quantifier)
+            end
+        catch err
+            @warn string(err)
+        end
+    end
+
+    for q in last_quantifiers
+        if q != "exists"
+            @warn string("The variable in the last block needs to be existential!")
+        end
     end
 
     # copy objective function
@@ -507,6 +537,11 @@ function Base.write(io::IO, qipmodel::Optimizer)
             end
         end
 
+        # show warning, if variable has no lower or upper bound
+        if lower == -9999.9 || upper == 9999.9
+            @warn string("Every variable needs to be bounded from above and below!")
+        end
+
         # write bounds
         println(io, string(lower) * " <= " * "x" * string(i) * " <= " * string(upper))
     end
@@ -557,12 +592,36 @@ function Base.write(io::IO, qipmodel::Optimizer)
     end
 
     # sort temp dict
+    last_block = 0
+    last_block_variables = []
     sorted = sort!(tempDict, byvalue=true)
 
     # build order string
     for (key, value) in sorted
         order = order * "x" * string(key) * " "
+        if value > last_block
+            last_block = value
+        end
     end
+
+    # save all last block variables
+    for (key, value) in sorted
+        if value != last_block
+            push!(last_block_variables, key)
+        end
+    end
+
+    # make sure, that continuos variables are only allowed in the last block
+    for (key, value) in sorted
+        if value != last_block
+            if !("x"*string(key) in generals) && !("x"*string(key) in binaries)
+                @warn string("Continuos variables are only allowed in the last block")
+            end
+        end
+    end
+
+    #@warn string(last_block)
+    #@warn string(last_block_variables)
 
     println(io, order)
 
