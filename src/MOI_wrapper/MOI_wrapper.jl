@@ -329,7 +329,11 @@ function MOI.copy_to(
     catch
         dest.output_info = 1
     end
-    dest.problem_file = MOI.get(model, MOI.RawOptimizerAttribute("problem file name"))
+    try
+        dest.problem_file = MOI.get(model, MOI.RawOptimizerAttribute("problem file name"))
+    catch
+        @error "Please provide a problem file name! No problem file could be written!"
+    end
 
     # copy objective sense
     dest.sense = MOI.get(model, MOI.ObjectiveSense())
@@ -351,9 +355,8 @@ function MOI.copy_to(
                 if block > last_block
                     last_block = block
                 end
-
             else
-                @warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+                @error string("You need to set a quantifier and a block for each variable when using Yasol solver!")
             end
 
         catch err
@@ -381,7 +384,7 @@ function MOI.copy_to(
 
     for q in last_quantifiers
         if q != "exists"
-            @warn string("The variable in the last block needs to be existential!")
+            @error string("The variable in the last block needs to be existential! Please add a dummy variable!")
         end
     end
 
@@ -523,12 +526,15 @@ function Base.write(io::IO, qipmodel::Optimizer)
     for i in 1:numVar
         lower = -9999.9
         upper = 9999.9
+        type = nothing
         for varCon in qipmodel.vc
             if varCon.vindex.value == i
                 if typeof(varCon.conSet) == MathOptInterface.Integer
                     push!(generals, "x"*string(i))
+                    type = "int"
                 elseif typeof(varCon.conSet) == MathOptInterface.ZeroOne
                     push!(binaries, "x"*string(i))
+                    type = "binary"
                 elseif typeof(varCon.conSet) == MathOptInterface.GreaterThan{Float64}
                     lower = varCon.conSet.lower
                 elseif typeof(varCon.conSet) == MathOptInterface.LessThan{Float64}
@@ -538,12 +544,22 @@ function Base.write(io::IO, qipmodel::Optimizer)
         end
 
         # show warning, if variable has no lower or upper bound
-        if lower == -9999.9 || upper == 9999.9
+        if (lower == -9999.9 || upper == 9999.9) && !(type == "binary")
             @warn string("Every variable needs to be bounded from above and below!")
+        elseif (lower == -9999.9 || upper == 9999.9) && type == "binary"
+            lower = 0
+            upper = 1
         end
 
         # write bounds
         println(io, string(lower) * " <= " * "x" * string(i) * " <= " * string(upper))
+    end
+
+    # check, if all variables are integer or binary
+    for a in all
+        if !(a in binaries) && (!a in generals)
+            @error string("All variables need to be binary or integer!")
+        end
     end
 
     # print binaries
@@ -615,7 +631,7 @@ function Base.write(io::IO, qipmodel::Optimizer)
     for (key, value) in sorted
         if value != last_block
             if !("x"*string(key) in generals) && !("x"*string(key) in binaries)
-                @warn string("Continuos variables are only allowed in the last block")
+                @error string("Continuos variables are only allowed in the last block")
             end
         end
     end
@@ -635,7 +651,7 @@ function MOI.optimize!(model::Optimizer)
 
     # check if problem file name is set, show warning otherwise
     if(model.problem_file == "")
-        @warn "Please provide a problem file name!"
+        @error "Please provide a problem file name! No problem file could be written!"
     end
 
     # check if Yasol.ini file is given in the solver folder
@@ -645,8 +661,8 @@ function MOI.optimize!(model::Optimizer)
     end
 
     # check if Yasol .exe is available under given path
-    if !isfile(String(model.solver_path*".exe"))
-        @warn "No Yasol executable was found under the given path!"
+    if !isfile(String(model.solver_path*".exe")) && !isfile(String(model.solver_path))
+        @error "No Yasol executable was found under the given path!"
     end
 
     model.optimize_not_called = false
