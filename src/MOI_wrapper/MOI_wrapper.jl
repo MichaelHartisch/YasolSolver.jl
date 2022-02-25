@@ -332,7 +332,8 @@ function MOI.copy_to(
     try
         dest.problem_file = MOI.get(model, MOI.RawOptimizerAttribute("problem file name"))
     catch
-        @error "Please provide a problem file name! No problem file could be written!"
+        @error string("Please provide a problem file name! No problem file could be written!")
+        return
     end
 
     # copy objective sense
@@ -357,6 +358,7 @@ function MOI.copy_to(
                 end
             else
                 @error string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+                return
             end
 
         catch err
@@ -385,6 +387,7 @@ function MOI.copy_to(
     for q in last_quantifiers
         if q != "exists"
             @error string("The variable in the last block needs to be existential! Please add a dummy variable!")
+            return
         end
     end
 
@@ -544,11 +547,9 @@ function Base.write(io::IO, qipmodel::Optimizer)
         end
 
         # show warning, if variable has no lower or upper bound
-        if (lower == -9999.9 || upper == 9999.9) && !(type == "binary")
-            @warn string("Every variable needs to be bounded from above and below!")
-        elseif (lower == -9999.9 || upper == 9999.9) && type == "binary"
-            lower = 0
-            upper = 1
+        if (lower == -9999.9 || upper == 9999.9)
+            @error string("Every variable needs to be bounded from above and below (binary variables as well)!")
+            return
         end
 
         # write bounds
@@ -559,6 +560,7 @@ function Base.write(io::IO, qipmodel::Optimizer)
     for a in all
         if !(a in binaries) && (!a in generals)
             @error string("All variables need to be binary or integer!")
+            return
         end
     end
 
@@ -632,6 +634,7 @@ function Base.write(io::IO, qipmodel::Optimizer)
         if value != last_block
             if !("x"*string(key) in generals) && !("x"*string(key) in binaries)
                 @error string("Continuos variables are only allowed in the last block")
+                return
             end
         end
     end
@@ -651,18 +654,20 @@ function MOI.optimize!(model::Optimizer)
 
     # check if problem file name is set, show warning otherwise
     if(model.problem_file == "")
-        @error "Please provide a problem file name! No problem file could be written!"
+        @error string("Please provide a problem file name! No problem file could be written!")
+        return
     end
 
     # check if Yasol.ini file is given in the solver folder
     path = joinpath(pwd(), "Yasol.ini")
     if !isfile(String(path))
-        @warn "No Yasol.ini file was found in the solver folder!"
+        @warn string("No Yasol.ini file was found in the solver folder!")
     end
 
     # check if Yasol .exe is available under given path
     if !isfile(String(model.solver_path*".exe")) && !isfile(String(model.solver_path))
-        @error "No Yasol executable was found under the given path!"
+        @error string("No Yasol executable was found under the given path!")
+        return
     end
 
     model.optimize_not_called = false

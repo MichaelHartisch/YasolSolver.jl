@@ -46,6 +46,7 @@ function JuMP.add_variable(
     # print warning, if variable in first block is not existential
     if(yasolVar.block == 1 && yasolVar.quantifier != "exists")
         @error string("Variables in the first block need to be existential! Please add a dummy variable!")
+        return
     end
 
     return var

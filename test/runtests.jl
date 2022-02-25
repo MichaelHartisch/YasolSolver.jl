@@ -6,7 +6,8 @@ const MOI = MathOptInterface
 
 
 @testset "YasolSolver.jl" begin
-    #include("MOI_wrapper.jl")
+    include("MOI_wrapper.jl")
+    """
     cd("C:/Yasol")
 
     model = Model(() -> YasolSolver.Optimizer())
@@ -33,5 +34,5 @@ const MOI = MathOptInterface
     @objective(model, Min, -1*x1 -2*x2 +2*x3 +1x4 - 5)
 
     optimize!(model)
-
+    """
 end
