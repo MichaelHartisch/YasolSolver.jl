@@ -49,6 +49,11 @@ function JuMP.add_variable(
         return
     end
 
+    # check if quantifier is "exists" or "all"
+    if((yasolVar.quantifier != "exists") && (yasolVar.quantifier != "all"))
+        @error string("Variable quantifier has to be either 'exists' or 'all'!")
+    end
+
     return var
 end
 
@@ -82,6 +87,11 @@ function JuMP.add_constraint(
 
     # add constarint attributes to constraint
     MOI.set(model, YasolSolver.ConstraintAttribute("quantifier"), con, yasolCon.quantifier)
+
+    # check if quantifier is "exists" or "all"
+    if((yasolCon.quantifier != "exists") && (yasolCon.quantifier != "all"))
+        @error string("Constraint quantifier has to be either 'exists' or 'all'!")
+    end
 
     return con
 end

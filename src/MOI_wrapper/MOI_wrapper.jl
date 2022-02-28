@@ -386,7 +386,8 @@ function MOI.copy_to(
 
     for q in last_quantifiers
         if q != "exists"
-            @error string("The variable in the last block needs to be existential! Please add a dummy variable!")
+            #@error string("The variable in the last block needs to be existential! Please add a dummy variable!")
+            @error last_quantifiers
             return
         end
     end
