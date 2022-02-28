@@ -7,7 +7,7 @@ const MOI = MathOptInterface
 
 @testset "YasolSolver.jl" begin
     include("MOI_wrapper.jl")
-    """
+
     cd("C:/Yasol")
     model = Model(() -> YasolSolver.Optimizer())
 
@@ -22,7 +22,7 @@ const MOI = MathOptInterface
 
     @variable(model, x3, binary=true, lower_bound=0, upper_bound=1, YasolVariable, quantifier="all", block=3)
 
-    @variable(model, x4, binary=true, lower_bound=0, upper_bound=1, YasolVariable, quantifier="exists", block=4)
+    @variable(model, x4, binary=true, lower_bound=0, upper_bound=1, YasolVariable, quantifier="all", block=4)
 
     @constraint(model, con1, 1*x1 -2*x2 +1*x3 -1*x4 +5 <= -1*x1 -3, YasolConstraint, quantifier="exists")
 
@@ -34,7 +34,7 @@ const MOI = MathOptInterface
 
     optimize!(model)
 
-
+    """
     cd("C:/Yasol")
 
     model = Model(() -> YasolSolver.Optimizer())
