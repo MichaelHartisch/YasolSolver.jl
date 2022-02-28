@@ -1,7 +1,7 @@
 name = "YasolSolver"
 uuid = "4543d8c2-dbf1-4999-b2cf-e00b224f19c5"
-authors = ["Hendrik Becker"]
-version = "0.1.0"
+authors = ["Hendrik Becker","Michael Hartisch"]
+version = "0.1.1"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
