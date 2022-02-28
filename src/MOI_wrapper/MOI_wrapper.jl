@@ -624,7 +624,7 @@ function Base.write(io::IO, qipmodel::Optimizer)
 
     # save all last block variables
     for (key, value) in sorted
-        if value != last_block
+        if value == last_block
             push!(last_block_variables, key)
         end
     end
@@ -725,18 +725,16 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.time_limit = Int64(value)
     elseif param == MOI.RawOptimizerAttribute("problem file name")
         model.problem_file = String(value)
-    elseif param == MOI.RawOptimizerAttribute("solver path")
-        model.solver_path = String(value)
-
         # check if problem file already exists
         if isfile(String(value))
             @warn "A file with the chosen name already exists. You are about to overwrite that file."
         end
-
         # check if solution file already exists
         if isfile(String(value) * ".sol")
             @warn "A solution file for the problem already exists. If you create another solution with the same name, you cannot import the new solution using JuMP."
         end
+    elseif param == MOI.RawOptimizerAttribute("solver path")
+        model.solver_path = String(value)
     end
     return
 end
