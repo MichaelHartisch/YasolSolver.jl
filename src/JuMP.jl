@@ -54,6 +54,11 @@ function JuMP.add_variable(
         @error string("Variable quantifier has to be either 'exists' or 'all'!")
     end
 
+    # check if block is an integer
+    if(!isinteger(yasolVar.block))
+        @error string("Variable blocks need to be of type integer!")
+    end
+
     return var
 end
 
