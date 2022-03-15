@@ -65,7 +65,7 @@ function importSolution(solPath::String)
     for node in eachelement(doc.root)
         if node.name == "header"
             objective_value = parse(Float64, node["ObjectiveValue"])
-            runtime = parse(Int64, rsplit(node["Runtime"], " ")[1])
+            runtime = parse(Float64, rsplit(node["Runtime"], " ")[1])
         elseif node.name == "quality"
             solutionStatus = node["SolutionStatus"]
             gap = parse(Float64, node["Gap"])
