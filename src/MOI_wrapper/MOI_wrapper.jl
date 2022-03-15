@@ -77,7 +77,7 @@ struct _Results
     #termination_status::MOI.TerminationStatusCode
 
     objective_value::Float64
-    runtime::Int64
+    runtime::Float64
     #decisionNodes::Int64
     #propagationSteps::Int64
     #learntConstraints::Int64
@@ -89,7 +89,7 @@ struct _Results
     # variable values
     values::Dict{String, Float64}
 
-    function _Results(obj::Float64, runtime::Int64, solStatus::String, gap::Float64, values::Dict{String, Float64})
+    function _Results(obj::Float64, runtime::Float64, solStatus::String, gap::Float64, values::Dict{String, Float64})
         return new(obj, runtime, solStatus, gap, values)
     end
 end
@@ -220,7 +220,7 @@ function Optimizer(
         stdout,
         _Results(
             0.0,
-            0,
+            0.0,
             "",
             0.0,
             Dict{String,Float64}()

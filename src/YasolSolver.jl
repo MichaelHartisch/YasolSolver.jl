@@ -57,7 +57,7 @@ function importSolution(solPath::String)
     doc = readxml(solPath)
 
     objective_value = 0.0
-    runtime = 0
+    runtime = 0.0
     solutionStatus = ""
     gap = 0.0
     values = Dict{String,Float64}()
