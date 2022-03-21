@@ -28,7 +28,7 @@ Models can be build using [JuMP.jl](https://github.com/jump-dev/JuMP.jl) package
 This can be done using the ``YasolSolver.Optimizer`` object. Here is how to create a
 *JuMP* model that uses Yasol as the solver.
 ```julia
-using JuMP, Yasol
+using JuMP, YasolSolver
 
 cd("C:/Yasol") # change path to Yasol .exe directory
 
