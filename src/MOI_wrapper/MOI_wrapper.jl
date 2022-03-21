@@ -77,7 +77,7 @@ struct _Results
     #termination_status::MOI.TerminationStatusCode
 
     objective_value::Float64
-    runtime::Int64
+    runtime::Float64
     #decisionNodes::Int64
     #propagationSteps::Int64
     #learntConstraints::Int64
@@ -89,7 +89,7 @@ struct _Results
     # variable values
     values::Dict{String, Float64}
 
-    function _Results(obj::Float64, runtime::Int64, solStatus::String, gap::Float64, values::Dict{String, Float64})
+    function _Results(obj::Float64, runtime::Float64, solStatus::String, gap::Float64, values::Dict{String, Float64})
         return new(obj, runtime, solStatus, gap, values)
     end
 end
@@ -220,7 +220,7 @@ function Optimizer(
         stdout,
         _Results(
             0.0,
-            0,
+            0.0,
             "",
             0.0,
             Dict{String,Float64}()
@@ -329,12 +329,21 @@ function MOI.copy_to(
     catch
         dest.output_info = 1
     end
-    dest.problem_file = MOI.get(model, MOI.RawOptimizerAttribute("problem file name"))
+    try
+        dest.problem_file = MOI.get(model, MOI.RawOptimizerAttribute("problem file name"))
+    catch
+        @error string("Please provide a problem file name! No problem file could be written!")
+        return
+    end
 
     # copy objective sense
     dest.sense = MOI.get(model, MOI.ObjectiveSense())
 
     # copy variables
+
+    # save the quantifier and block of the last variable
+    last_block = 0
+    last_quantifiers = []
     for v in MOI.get(model, MOI.ListOfVariableIndices())
 
         try
@@ -343,16 +352,43 @@ function MOI.copy_to(
 
             if quantifier !== nothing && block !== nothing
                 dest.v[v] = _VariableInfo(v, block, quantifier)
+
+                if block > last_block
+                    last_block = block
+                end
             else
-                @warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+                @error string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+                return
             end
 
         catch err
             #println("You need to set a quantifier and a block for each variable when using Yasol solver!")
-            @warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+            #@warn string("You need to set a quantifier and a block for each variable when using Yasol solver!")
+            @warn string(err)
         end
 
         mapping[v] = v
+    end
+
+    # show warning, if variable in last block is not existential
+    for v in MOI.get(model, MOI.ListOfVariableIndices())
+        try
+            quantifier = MOI.get(model, YasolSolver.VariableAttribute("quantifier"), v)
+            block = MOI.get(model, YasolSolver.VariableAttribute("block"), v)
+
+            if block == last_block
+                push!(last_quantifiers, quantifier)
+            end
+        catch err
+            @warn string(err)
+        end
+    end
+
+    for q in last_quantifiers
+        if q != "exists"
+            @error string("The variable in the last block needs to be existential! Please add a dummy variable!")
+            return
+        end
     end
 
     # copy objective function
@@ -493,12 +529,15 @@ function Base.write(io::IO, qipmodel::Optimizer)
     for i in 1:numVar
         lower = -9999.9
         upper = 9999.9
+        type = nothing
         for varCon in qipmodel.vc
             if varCon.vindex.value == i
                 if typeof(varCon.conSet) == MathOptInterface.Integer
                     push!(generals, "x"*string(i))
+                    type = "int"
                 elseif typeof(varCon.conSet) == MathOptInterface.ZeroOne
                     push!(binaries, "x"*string(i))
+                    type = "binary"
                 elseif typeof(varCon.conSet) == MathOptInterface.GreaterThan{Float64}
                     lower = varCon.conSet.lower
                 elseif typeof(varCon.conSet) == MathOptInterface.LessThan{Float64}
@@ -507,8 +546,22 @@ function Base.write(io::IO, qipmodel::Optimizer)
             end
         end
 
+        # show warning, if variable has no lower or upper bound
+        if (lower == -9999.9 || upper == 9999.9)
+            @error string("Every variable needs to be bounded from above and below (binary variables as well)!")
+            return
+        end
+
         # write bounds
         println(io, string(lower) * " <= " * "x" * string(i) * " <= " * string(upper))
+    end
+
+    # check, if all variables are integer or binary
+    for a in all
+        if !(a in binaries) && (!a in generals)
+            @error string("All variables need to be binary or integer!")
+            return
+        end
     end
 
     # print binaries
@@ -557,12 +610,37 @@ function Base.write(io::IO, qipmodel::Optimizer)
     end
 
     # sort temp dict
+    last_block = 0
+    last_block_variables = []
     sorted = sort!(tempDict, byvalue=true)
 
     # build order string
     for (key, value) in sorted
         order = order * "x" * string(key) * " "
+        if value > last_block
+            last_block = value
+        end
     end
+
+    # save all last block variables
+    for (key, value) in sorted
+        if value == last_block
+            push!(last_block_variables, key)
+        end
+    end
+
+    # make sure, that continuos variables are only allowed in the last block
+    for (key, value) in sorted
+        if value != last_block
+            if !("x"*string(key) in generals) && !("x"*string(key) in binaries)
+                @error string("Continuos variables are only allowed in the last block")
+                return
+            end
+        end
+    end
+
+    #@warn string(last_block)
+    #@warn string(last_block_variables)
 
     println(io, order)
 
@@ -576,18 +654,20 @@ function MOI.optimize!(model::Optimizer)
 
     # check if problem file name is set, show warning otherwise
     if(model.problem_file == "")
-        @warn "Please provide a problem file name!"
+        @error string("Please provide a problem file name! No problem file could be written!")
+        return
     end
 
     # check if Yasol.ini file is given in the solver folder
     path = joinpath(pwd(), "Yasol.ini")
     if !isfile(String(path))
-        @warn "No Yasol.ini file was found in the solver folder!"
+        @warn string("No Yasol.ini file was found in the solver folder!")
     end
 
     # check if Yasol .exe is available under given path
-    if !isfile(String(model.solver_path*".exe"))
-        @warn "No Yasol executable was found under the given path!"
+    if !isfile(String(model.solver_path*".exe")) && !isfile(String(model.solver_path))
+        @error string("No Yasol executable was found under the given path!")
+        return
     end
 
     model.optimize_not_called = false
@@ -645,18 +725,16 @@ function MOI.set(model::Optimizer, param::MOI.RawOptimizerAttribute, value)
         model.time_limit = Int64(value)
     elseif param == MOI.RawOptimizerAttribute("problem file name")
         model.problem_file = String(value)
-    elseif param == MOI.RawOptimizerAttribute("solver path")
-        model.solver_path = String(value)
-
         # check if problem file already exists
         if isfile(String(value))
             @warn "A file with the chosen name already exists. You are about to overwrite that file."
         end
-
         # check if solution file already exists
         if isfile(String(value) * ".sol")
             @warn "A solution file for the problem already exists. If you create another solution with the same name, you cannot import the new solution using JuMP."
         end
+    elseif param == MOI.RawOptimizerAttribute("solver path")
+        model.solver_path = String(value)
     end
     return
 end
