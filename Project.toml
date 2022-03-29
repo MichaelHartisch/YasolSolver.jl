@@ -1,6 +1,6 @@
 name = "YasolSolver"
 uuid = "4543d8c2-dbf1-4999-b2cf-e00b224f19c5"
-authors = ["Hendrik Becker","Michael Hartisch"]
+authors = ["Hendrik Becker", "Michael Hartisch"]
 repo = "https://github.com/MichaelHartisch/YasolSolver.jl.git"
 version = "0.1.2"
 
