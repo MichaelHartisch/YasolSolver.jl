@@ -307,7 +307,8 @@ MOI.supports(::Optimizer, ::MOI.ObjectiveFunction{<:MOI.ScalarAffineFunction}) =
 # ========================================
 #   Copy_to functionality. No incremental modification supported.
 # ========================================
-MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = false
+#MOI.Utilities.supports_default_copy_to(::Optimizer, ::Bool) = false -> deprecated!!!
+MOI.supports_incremental_interface(::Optimizer) = false
 
 function MOI.copy_to(
     dest::Optimizer,
